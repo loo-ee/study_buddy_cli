@@ -108,8 +108,7 @@ pub mod auth {
             let is_superuser: bool = row.get("is_superuser");
             let is_staff: bool = row.get("is_staff");
             let is_active: bool = row.get("is_active");
-            let last_login_str: &str =  row.get("last_login");
-            let last_login: DateTime<Utc> = DateTime::parse_from_rfc3339(last_login_str).unwrap().into();
+            // TODO: IMPLEMENT DATETIME
 
             let mut user = User::new(
                 id,
@@ -122,8 +121,7 @@ pub mod auth {
 
             user.set_is_superuser(is_superuser)
                 .set_is_active(is_active)
-                .set_is_staff(is_staff)
-                .set_last_login(last_login);
+                .set_is_staff(is_staff);
             
             Ok(user) 
         }
