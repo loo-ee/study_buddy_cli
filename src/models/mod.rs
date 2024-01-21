@@ -1,8 +1,9 @@
 pub mod auth {
     use chrono::{DateTime, Utc};
 
+    #[derive(Debug)]
     pub struct User {
-        id: u32,
+        id: i64,
         username: String,
         email: String,
         password: String,
@@ -15,8 +16,8 @@ pub mod auth {
     }
 
     impl User {
-        fn new(
-            id: u32, 
+        pub fn new(
+            id: i64, 
             username: String, 
             email: String,
             password: String,
@@ -29,44 +30,102 @@ pub mod auth {
             }
         }
 
-        fn get_id(&self) -> &u32{
+        pub fn get_id(&self) -> &i64{
             &self.id
         }
 
-        fn get_username(&self) -> &str {
+        pub fn get_username(&self) -> &str {
             &self.username
         }
 
-        fn get_email(&self) -> &str {
+        pub fn get_email(&self) -> &str {
             &self.email
         }
 
-        fn get_password(&self) -> &str {
+        pub fn get_password(&self) -> &str {
             &self.password
         }
 
-        fn get_first_name(&self) -> &str {
+        pub fn get_first_name(&self) -> &str {
             &self.first_name
         }
 
-        fn get_last_name(&self) -> &str {
+        pub fn get_last_name(&self) -> &str {
             &self.last_name
         }
 
-        fn get_is_active(&self) -> &Option<bool> {
+        pub fn get_is_active(&self) -> &Option<bool> {
             &self.is_active
         }
 
-        fn get_is_staff(&self) -> &Option<bool> {
+        pub fn get_is_staff(&self) -> &Option<bool> {
             &self.is_staff
         }
 
-        fn get_is_superuser(&self) -> &Option<bool> {
+        pub fn get_is_superuser(&self) -> &Option<bool> {
             &self.is_superuser
         }
 
-        fn get_last_login(&self) -> &Option<DateTime<Utc>> {
+        pub fn get_last_login(&self) -> &Option<DateTime<Utc>> {
             &self.last_login
+        }
+
+        pub fn set_is_superuser(&mut self, status: bool) -> &mut User {
+            self.is_superuser = Some(status);
+            self
+        }
+
+        pub fn set_is_staff(&mut self, status: bool) -> &mut User {
+            self.is_staff = Some(status);
+            self
+        }
+
+        pub fn set_is_active(&mut self, status: bool) ->&mut User {
+            self.is_active = Some(status);
+            self
+        }
+
+        pub fn set_last_login(&mut self, time: DateTime<Utc>) -> &mut User {
+            self.last_login = Some(time);
+            self
+        }
+    }
+    
+    pub mod serializer {
+        use std::error::Error;
+
+        use chrono::{DateTime, Utc};
+        use postgres::Row;
+        use crate::models::auth::User;
+
+        pub fn postgres_to_user(row: Row) -> Result<User, Box<dyn Error>> {
+            let id: i64 = row.get("id");
+            let username: &str = row.get("username");
+            let email: &str = row.get("email");
+            let password : &str = row.get("password");
+            let first_name: &str = row.get("first_name");
+            let last_name: &str = row.get("last_name");
+            let is_superuser: bool = row.get("is_superuser");
+            let is_staff: bool = row.get("is_staff");
+            let is_active: bool = row.get("is_active");
+            let last_login_str: &str =  row.get("last_login");
+            let last_login: DateTime<Utc> = DateTime::parse_from_rfc3339(last_login_str).unwrap().into();
+
+            let mut user = User::new(
+                id,
+                username.to_string(), 
+                email.to_string(), 
+                password.to_string(), 
+                first_name.to_string(), 
+                last_name.to_string(), 
+            );
+
+            user.set_is_superuser(is_superuser)
+                .set_is_active(is_active)
+                .set_is_staff(is_staff)
+                .set_last_login(last_login);
+            
+            Ok(user) 
         }
     }
 }
@@ -88,12 +147,12 @@ pub mod task {
         }
 
         fn set_title(&mut self, title: &str) -> &Task {
-            &self.title.replace_range(.., title);
+            let _ = &self.title.replace_range(.., title);
             self
         }
 
         fn set_description(&mut self, description: &str) -> &Task {
-            &self.description.replace_range(.., description);
+            let _ = &self.description.replace_range(.., description);
             self
         }
 

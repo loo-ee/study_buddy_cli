@@ -11,18 +11,13 @@ use std::borrow::Borrow;
 use models::auth::User;
 use models::task::Task;
 use storage::user_storage::STORAGE;
+use postgres_client::pgclient;
 
 fn main() {
     println!("STUDY BUDDY");
 
-    let mut client = postgres_client::PG_CLIENT.lock().unwrap();
-    let rows = client.query("SELECT * FROM project_auth_user", &[]).unwrap(); 
-
-    for row in rows {
-        let id: i64 = row.get("id");
-        let email: &str = row.get("email");
-        println!("{} -> {}", id, email);
-    }
+    let users = pgclient::get_all_users();
+    println!("{:?}", users);
 }
 
 fn show_menu() {
