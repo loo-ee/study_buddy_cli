@@ -15,7 +15,7 @@ impl UserStorage {
     }
 
     fn insert_user(&mut self, user: User) -> &UserStorage {
-        &self.users.push(user);
+        let _ = &self.users.push(user);
         self
     }
 }

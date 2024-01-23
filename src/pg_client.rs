@@ -5,7 +5,6 @@ use std::{error, env};
 use tokio::task::JoinHandle;
 
 use crate::models::auth::User;
-use crate::models::auth::serializer::postgres_to_user;
 
 lazy_static! {
     static ref PG_CLIENT: Mutex<Option<PgPool>> = Mutex::new(None);
@@ -38,19 +37,14 @@ pub fn connect() -> JoinHandle<Result<(), sqlx::Error>> {
 }
 
 pub async fn get_all_users() -> Result<Vec<User>, sqlx::Error> {
-    let mut users: Vec<User> = Vec::new();
     let pool_guard = PG_CLIENT.lock().unwrap();
 
     match &*pool_guard {
         Some(pool) => {
-            let rows = sqlx::query("SELECT * FROM project_auth_user")
+            let users = sqlx::query_as::<_, User>("SELECT * FROM project_auth_user")
                 .fetch_all(pool)
                 .await?;
             
-            for row in rows {
-                let user = postgres_to_user(row);
-                users.push(user.unwrap());
-            }
             Ok(users)
         },
         None => Err(sqlx::Error::Configuration(String::from("Pool not initialized").into())),
