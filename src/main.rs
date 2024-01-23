@@ -1,19 +1,18 @@
 #[macro_use]
 extern crate lazy_static;
 
-mod models;
 mod storage;
-mod postgres_client;
+mod pg_client;
+mod models;
 
 use std::borrow::Borrow;
 use models::auth::User;
 use models::task::Task;
 use storage::user_storage::STORAGE;
-use postgres_client::pgclient;
 
 fn main() {
     println!("STUDY BUDDY");
-    let users = pgclient::get_all_users();
+    let users = pg_client::get_all_users();
 
     for user in  users.iter() {
         println!("{:?}", user);
