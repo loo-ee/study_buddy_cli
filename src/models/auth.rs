@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 
 #[derive(Debug)]
+#[derive(sqlx::FromRow)]
 pub struct User {
     id: i64,
     username: String,
@@ -11,7 +12,7 @@ pub struct User {
     is_superuser: Option<bool>,
     is_staff: Option<bool>,
     is_active: Option<bool>,
-    last_login: Option<DateTime<Utc>>,
+    last_login: Option<chrono::DateTime<Utc>>,
 }
 
 impl User {
@@ -22,6 +23,7 @@ impl User {
         password: String,
         first_name: String,
         last_name: String,
+        last_login: DateTime<Utc>,
     ) -> User {
         User { 
             id, username, email, password, first_name, last_name, 
@@ -92,12 +94,13 @@ impl User {
 
 pub mod serializer {
     use std::error::Error;
-
     use chrono::{DateTime, Utc};
-    use postgres::Row;
+    use sqlx::postgres::PgRow;
+    use sqlx::Row;
+
     use crate::models::auth::User;
 
-    pub fn postgres_to_user(row: Row) -> Result<User, Box<dyn Error>> {
+    pub fn postgres_to_user(row: PgRow) -> Result<User, Box<dyn Error>> {
         let id: i64 = row.get("id");
         let username: &str = row.get("username");
         let email: &str = row.get("email");
@@ -107,7 +110,7 @@ pub mod serializer {
         let is_superuser: bool = row.get("is_superuser");
         let is_staff: bool = row.get("is_staff");
         let is_active: bool = row.get("is_active");
-        // TODO: IMPLEMENT DATETIME
+        let last_login: DateTime<Utc> = row.get("last_login");
 
         let mut user = User::new(
             id,
@@ -116,11 +119,13 @@ pub mod serializer {
             password.to_string(), 
             first_name.to_string(), 
             last_name.to_string(), 
+            last_login
         );
 
         user.set_is_superuser(is_superuser)
             .set_is_active(is_active)
-            .set_is_staff(is_staff);
+            .set_is_staff(is_staff)
+            .set_last_login(last_login);
         
         Ok(user) 
     }
