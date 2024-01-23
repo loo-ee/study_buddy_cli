@@ -10,11 +10,13 @@ use models::auth::User;
 use models::task::Task;
 use storage::user_storage::STORAGE;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("STUDY BUDDY");
-    let users = pg_client::get_all_users();
+    let _ = pg_client::connect().await;
+    let users = pg_client::get_all_users().await;
 
-    for user in  users.iter() {
+    for user in  users.unwrap() {
         println!("{:?}", user);
     }
 }
