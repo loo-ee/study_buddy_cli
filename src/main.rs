@@ -20,15 +20,29 @@ use tokio::sync::SemaphorePermit;
 #[tokio::main]
 async fn main() {
     let _ = pg_client::connect().await;
-    let mut auth_menu_loop = true;
 
     println!("STUDY BUDDY");
 
-    while auth_menu_loop {
-        let mut choice_input = String::new();
-        let mut auth_status = false;
-
         show_auth_menu();
+}
+
+async fn show_auth_menu() -> bool {
+    let mut choice_input = String::new();
+    let mut auth_status = false;
+    let mut lock = stdout().lock();
+    let auth_login_screen = 
+    r#"
+    | LOGIN / REGISTER |
+        [1] Login
+        [2] Register
+        [3] Exit
+    "#;
+
+    loop {
+        println!("{}", auth_login_screen);
+        write!(lock, ">> ").unwrap();
+        io::stdout().flush().unwrap();
+
         io::stdin().read_line(&mut choice_input).expect("Failed to read line");
         print!("\x1B[2J");
 
@@ -42,34 +56,29 @@ async fn main() {
         }
 
         if auth_status {
-            auth_menu_loop = false;
+            break;
         }
     }
-}
 
-fn show_auth_menu() {
-    let mut lock = stdout().lock();
-    let auth_login_screen = 
-    r#"
-    | LOGIN / REGISTER |
-        [1] Login
-        [2] Register
-        [3] Exit
-    "#;
-
-    println!("{}", auth_login_screen);
-    write!(lock, ">> ").unwrap();
-    io::stdout().flush().unwrap();
+    return auth_status;
 }
 
 async fn authenticate_user() -> bool {
-    println!("Authenticating...");
-    let status = pg_client::auth::validate_login("admin@fake.com", "admin").await.unwrap();
+    let mut tries = 0;
+    let mut status: bool = false;
+    const MAX_TRIES: u32 = 5;
 
-    if status {
-        println!("User authenticated!");
-    } else {
-        println!("Try again...");
+    while tries < MAX_TRIES {
+        status = pg_client::auth::validate_login("admin@fake.com", "admin").await.unwrap();
+
+        println!("Authenticating...");
+
+        if status {
+            println!("User authenticated!");
+        } else {
+            tries += 1;
+            println!("Try again...");
+        }
     }
 
     status
