@@ -1,7 +1,7 @@
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{pool, PgPool};
+use sqlx::{PgPool, Row};
 use std::sync::Mutex;
-use std::{error, env};
+use std::env;
 use tokio::task::JoinHandle;
 
 use crate::models::auth::User;
@@ -36,6 +36,30 @@ pub fn connect() -> JoinHandle<Result<(), sqlx::Error>> {
     })
 }
 
+pub mod auth {
+    use sqlx::Row;
+
+    use super::PG_CLIENT;
+
+    pub async fn validate_login(email: &str, password: &str) -> Result<bool, sqlx::Error> {
+        let pool_guard = PG_CLIENT.lock().unwrap();
+
+        match &*pool_guard {
+            Some(pool) => {
+                let row = sqlx::query("SELECT password FROM project_auth_user WHERE email=$1")
+                    .bind(email)
+                    .fetch_one(pool)
+                    .await?;
+
+                let user_hashed_pass = row.get::<String, _>("password");
+                let is_valid = djangohashers::check_password(password, &user_hashed_pass).unwrap();
+                Ok(is_valid)
+            },
+            None => Err(sqlx::Error::Configuration(String::from("Pool not initialized").into())),
+        }
+    }
+}
+
 pub async fn get_all_users() -> Result<Vec<User>, sqlx::Error> {
     let pool_guard = PG_CLIENT.lock().unwrap();
 
@@ -50,3 +74,20 @@ pub async fn get_all_users() -> Result<Vec<User>, sqlx::Error> {
         None => Err(sqlx::Error::Configuration(String::from("Pool not initialized").into())),
     }
 }
+
+pub async fn get_one_user(email: &str) -> Result<User, sqlx::Error> {
+    let pool_guard = PG_CLIENT.lock().unwrap();
+
+    match &*pool_guard {
+        Some(pool) => {
+            let found_user = sqlx::query_as::<_, User>("SELECT * FROM project_auth_user WHERE email=$1")
+            .bind(email)
+            .fetch_one(pool)
+            .await?;
+
+            Ok(found_user)
+        },
+        None => Err(sqlx::Error::Configuration(String::from("Pool not initialized").into())),
+    }
+}
+
