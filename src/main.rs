@@ -23,7 +23,7 @@ async fn main() {
 
     println!("STUDY BUDDY");
 
-        show_auth_menu();
+    let is_autheticated = show_auth_menu().await;
 }
 
 async fn show_auth_menu() -> bool {
