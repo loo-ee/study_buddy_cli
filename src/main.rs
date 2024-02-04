@@ -10,8 +10,6 @@ use std::backtrace;
 use std::borrow::Borrow;
 use std::io::{self, stdout, Read, Write};
 
-use djangohashers::{make_password, check_password};
-
 use models::auth::User;
 use models::task::Task;
 use storage::user_storage::STORAGE;
@@ -23,7 +21,13 @@ async fn main() {
 
     println!("STUDY BUDDY");
 
-    let is_autheticated = show_auth_menu().await;
+    let is_authenticated = show_auth_menu().await;
+
+    if !is_authenticated {
+        return;
+    }
+
+
 }
 
 async fn show_auth_menu() -> bool {
@@ -34,8 +38,7 @@ async fn show_auth_menu() -> bool {
     r#"
     | LOGIN / REGISTER |
         [1] Login
-        [2] Register
-        [3] Exit
+        [2] Exit
     "#;
 
     loop {
@@ -46,40 +49,61 @@ async fn show_auth_menu() -> bool {
         io::stdin().read_line(&mut choice_input).expect("Failed to read line");
         print!("\x1B[2J");
 
-        choice_input = choice_input.trim().to_string();
-
-        match choice_input.as_str() {
+        match choice_input.trim() {
             "1" => {
                 auth_status = authenticate_user().await;
+
+                if auth_status {
+                    return true
+                }
+            }
+            "2" => {
+                break;
             }
             _ => println!("You dumass")
         }
 
-        if auth_status {
-            break;
-        }
+        choice_input.clear();
     }
 
-    return auth_status;
+    return false
 }
 
 async fn authenticate_user() -> bool {
     let mut tries = 0;
     let mut status: bool = false;
+    let mut email_input = String::new();
+    let mut pass_input = String::new();
+    let mut lock = stdout().lock();
     const MAX_TRIES: u32 = 5;
 
     while tries < MAX_TRIES {
-        status = pg_client::auth::validate_login("admin@fake.com", "admin").await.unwrap();
+        io::stdout().flush().unwrap();
+        write!(lock, "Enter email: ").unwrap();
+        io::stdout().flush().unwrap();
+        io::stdin().read_line(&mut email_input).expect("Error reading line");
 
+        write!(lock, "Enter password: ").unwrap();
+        io::stdout().flush().unwrap();
+        io::stdin().read_line(&mut pass_input).expect("Error reading line");
+
+        status = pg_client::auth::validate_login(email_input.trim(), pass_input.trim()).await.unwrap();
         println!("Authenticating...");
 
         if status {
             println!("User authenticated!");
+            break;
         } else {
             tries += 1;
+            email_input.clear();
+            pass_input.clear();
             println!("Try again...");
         }
     }
 
     status
+}
+
+async fn show_actions() {
+    
 }
